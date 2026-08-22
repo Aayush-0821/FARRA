@@ -1,0 +1,35 @@
+{
+  "name": "farra",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=merchant-dashboard\" \"npm run dev --workspace=api\" \"npm run dev --workspace=worker\"",
+
+    "dev:web": "npm run dev --workspace=merchant-dashboard",
+    "dev:api": "npm run dev --workspace=api",
+    "dev:worker": "npm run dev --workspace=worker",
+
+    "build": "npm run build --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "lint": "npm run lint --workspaces",
+
+    "db:generate": "npm run generate --workspace=database",
+    "db:migrate": "npm run migrate --workspace=database",
+    "db:deploy": "npm run deploy --workspace=database",
+    "db:seed": "npm run seed --workspace=database",
+    "db:studio": "npm run studio --workspace=database",
+
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs -f",
+
+    "setup": "npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

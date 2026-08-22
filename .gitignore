@@ -1,0 +1,4 @@
+node_modules
+
+# Agent/tooling metadata
+.agents/
