@@ -1,13 +1,768 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum MerchantStatus {
+  ACTIVE
+  SUSPENDED
+  DISCONNECTED
+}
+
+enum ConnectionStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+  DISCONNECTED
+}
+
+enum CustomerLanguage {
+  ENGLISH
+  HINDI
+  HINGLISH
+}
+
+enum PaymentStatus {
+  CREATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  CANCELLED
+}
+
+enum SubscriptionStatus {
+  CREATED
+  ACTIVE
+  PENDING
+  HALTED
+  CANCELLED
+  COMPLETED
+  EXPIRED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum WebhookStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  FAILED
+  IGNORED
+}
+
+enum RevenueEventType {
+  PAYMENT_CREATED
+  PAYMENT_FAILED
+  PAYMENT_CAPTURED
+  SUBSCRIPTION_FAILED
+  SUBSCRIPTION_CHARGE_FAILED
+  INVOICE_OVERDUE
+  CHECKOUT_ABANDONED
+  PAYMENT_DEGRADED
+  MANDATE_FAILED
+  PAYMENT_LINK_EXPIRED
+}
+
+enum RevenueEventStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+enum RevenueRiskType {
+  FAILED_PAYMENT
+  FAILED_SUBSCRIPTION
+  CHECKOUT_ABANDONMENT
+  OVERDUE_INVOICE
+  PAYMENT_DEGRADATION
+  MANDATE_FAILURE
+  PAYMENT_LINK_EXPIRY
+}
+
+enum RevenueRiskStatus {
+  OPEN
+  IN_RECOVERY
+  RECOVERED
+  PARTIALLY_RECOVERED
+  EXPIRED
+  CLOSED
+}
+
+enum RiskSignalType {
+  PAYMENT_FAILURE
+  CUSTOMER_HISTORY
+  PAYMENT_METHOD
+  RETRY_HISTORY
+  SUBSCRIPTION_HISTORY
+  CHECKOUT_BEHAVIOR
+  INVOICE_AGE
+  CUSTOMER_VALUE
+  FAILURE_FREQUENCY
+  OTHER
+}
+
+enum RecoveryStrategy {
+  RETRY_PAYMENT
+  RETRY_MANDATE
+  SEND_PAYMENT_LINK
+  SEND_EMAIL
+  SEND_WHATSAPP
+  VOICE_RECOVERY
+  SUBSCRIPTION_RETRY
+  PAYMENT_REMINDER
+  B2B_CHASER
+  PROMISE_TO_PAY
+  ESCALATE
+  NO_ACTION
+}
+
+enum DecisionStatus {
+  PENDING
+  APPROVED
+  BLOCKED
+  EXECUTED
+  FAILED
+  EXPIRED
+}
+
+enum PolicyResult {
+  ALLOWED
+  BLOCKED
+  ESCALATED
+}
+
+enum RecoveryCaseStatus {
+  PENDING
+  ACTIVE
+  RECOVERED
+  PARTIALLY_RECOVERED
+  FAILED
+  STOPPED
+  EXPIRED
+}
+
+enum RecoveryActionType {
+  RETRY_PAYMENT
+  RETRY_MANDATE
+  SEND_EMAIL
+  SEND_WHATSAPP
+  SEND_SMS
+  VOICE_CALL
+  SEND_PAYMENT_LINK
+  SUBSCRIPTION_RETRY
+  PAYMENT_REMINDER
+  ESCALATE
+}
+
+enum RecoveryChannel {
+  PAYMENT_API
+  EMAIL
+  WHATSAPP
+  SMS
+  VOICE
+  DASHBOARD
+}
+
+enum ActionStatus {
+  SCHEDULED
+  EXECUTING
+  SUCCESS
+  FAILED
+  SKIPPED
+  CANCELLED
+}
+
+enum AttemptStatus {
+  STARTED
+  SUCCESS
+  FAILED
+  TIMEOUT
+  CANCELLED
+}
+
+enum VerificationType {
+  PAYMENT_STATUS
+  RAZORPAY_WEBHOOK
+  TRANSACTION_LOOKUP
+  MANUAL
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum VoiceRecoveryStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  NO_ANSWER
+  DECLINED
+}
+
+enum PromiseStatus {
+  PENDING
+  FULFILLED
+  BROKEN
+  EXPIRED
+  CANCELLED
+}
+
+enum AttributionType {
+  DIRECT
+  ASSISTED
+  PROBABILISTIC
+}
+
+enum AuditActorType {
+  AI_AGENT
+  POLICY_ENGINE
+  SYSTEM
+  WORKER
+  MERCHANT
+  RAZORPAY
+}
+
+enum AuditAction {
+  RISK_DETECTED
+  AI_ANALYSIS_CREATED
+  RECOVERY_DECISION_CREATED
+  POLICY_EVALUATED
+  ACTION_SCHEDULED
+  ACTION_EXECUTED
+  ACTION_FAILED
+  RECOVERY_VERIFIED
+  REVENUE_ATTRIBUTED
+  CASE_STOPPED
+  ESCALATION_CREATED
+  VOICE_CALL_STARTED
+  VOICE_CALL_COMPLETED
+}
+
+model Merchant {
+  id                String         @id @default(uuid())
+  razorpayAccountId String         @unique
+  name              String
+  email             String?
+  currency          String         @default("INR")
+  status            MerchantStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  razorpayConnection RazorpayConnection?
+  customers          Customer[]
+  payments           Payment[]
+  subscriptions      Subscription[]
+  invoices           Invoice[]
+  webhookEvents      WebhookEvent[]
+  revenueEvents      RevenueEvent[]
+  revenueRisks       RevenueRisk[]
+  recoveryPolicies   RecoveryPolicy[]
+  recoveryCases      RecoveryCase[]
+  attributions       RevenueAttribution[]
+  auditLogs          AuditLog[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model RazorpayConnection {
+  id         String @id @default(uuid())
+  merchantId String @unique
+  provider   String @default("razorpay")
+
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime?
+  scope        String?
+
+  status ConnectionStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+}
+
+model Customer {
+  id                 String           @id @default(uuid())
+  merchantId         String
+  razorpayCustomerId String?
+  name               String
+  email              String?
+  phone              String?
+  preferredLanguage  CustomerLanguage @default(ENGLISH)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  merchant        Merchant        @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  payments        Payment[]
+  subscriptions   Subscription[]
+  invoices        Invoice[]
+  revenueRisks    RevenueRisk[]
+  promiseToPays   PromiseToPay[]
+  voiceRecoveries VoiceRecovery[]
+
+  @@unique([merchantId, razorpayCustomerId])
+  @@index([merchantId])
+  @@index([email])
+  @@index([phone])
+}
+
+model Payment {
+  id                String  @id @default(uuid())
+  merchantId        String
+  customerId        String?
+  razorpayPaymentId String
+
+  amount   Decimal
+  currency String        @default("INR")
+  status   PaymentStatus
+
+  method        String?
+  failureCode   String?
+  failureReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  merchant      Merchant               @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  customer      Customer?              @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  verifications RecoveryVerification[]
+  attributions  RevenueAttribution[]
+
+  @@unique([merchantId, razorpayPaymentId])
+  @@index([merchantId, status])
+  @@index([customerId])
+  @@index([createdAt])
+}
+
+model Subscription {
+  id                     String  @id @default(uuid())
+  merchantId             String
+  customerId             String?
+  razorpaySubscriptionId String
+
+  amount   Decimal
+  currency String             @default("INR")
+  status   SubscriptionStatus
+
+  nextChargeAt   DateTime?
+  failedAttempts Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  merchant Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@unique([merchantId, razorpaySubscriptionId])
+  @@index([merchantId, status])
+  @@index([nextChargeAt])
+}
+
+model Invoice {
+  id                String  @id @default(uuid())
+  merchantId        String
+  customerId        String?
+  razorpayInvoiceId String
+
+  amount    Decimal
+  dueAmount Decimal
+  currency  String        @default("INR")
+  status    InvoiceStatus
+
+  dueAt  DateTime?
+  paidAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  merchant Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@unique([merchantId, razorpayInvoiceId])
+  @@index([merchantId, status])
+  @@index([dueAt])
+}
+
+model WebhookEvent {
+  id         String @id @default(uuid())
+  merchantId String
+
+  eventId   String
+  eventType String
+  payload   Json
+
+  receivedAt  DateTime      @default(now())
+  processedAt DateTime?
+  status      WebhookStatus @default(RECEIVED)
+  error       String?
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, eventId])
+  @@index([merchantId, status])
+  @@index([eventType])
+  @@index([receivedAt])
+}
+
+model RevenueEvent {
+  id         String @id @default(uuid())
+  merchantId String
+
+  eventType  RevenueEventType
+  sourceType String
+  sourceId   String?
+
+  payload Json
+
+  status RevenueEventStatus @default(PENDING)
+
+  occurredAt DateTime
+  createdAt  DateTime @default(now())
+
+  merchant Merchant      @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  risks    RevenueRisk[]
+
+  @@index([merchantId, eventType])
+  @@index([merchantId, occurredAt])
+}
+
+model RevenueRisk {
+  id         String  @id @default(uuid())
+  merchantId String
+  customerId String?
+
+  revenueEventId String?
+
+  sourceType String
+  sourceId   String?
+
+  riskType RevenueRiskType
+  status   RevenueRiskStatus @default(OPEN)
+
+  riskScore    Decimal
+  probability  Decimal
+  amountAtRisk Decimal
+  expectedLoss Decimal
+  currency     String  @default("INR")
+
+  detectedAt DateTime  @default(now())
+  expiresAt  DateTime?
+  resolvedAt DateTime?
+
+  merchant     Merchant      @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  customer     Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  revenueEvent RevenueEvent? @relation(fields: [revenueEventId], references: [id], onDelete: SetNull)
+
+  signals       RiskSignal[]
+  analyses      AIAnalysis[]
+  decisions     RecoveryDecision[]
+  recoveryCases RecoveryCase[]
+
+  @@index([merchantId, status])
+  @@index([merchantId, riskType])
+  @@index([customerId])
+  @@index([detectedAt])
+}
+
+model RiskSignal {
+  id            String @id @default(uuid())
+  revenueRiskId String
+
+  signalType RiskSignalType
+  value      String?
+  weight     Decimal?
+  source     String?
+
+  createdAt DateTime @default(now())
+
+  revenueRisk RevenueRisk @relation(fields: [revenueRiskId], references: [id], onDelete: Cascade)
+
+  @@index([revenueRiskId])
+  @@index([signalType])
+}
+
+model AIAnalysis {
+  id            String @id @default(uuid())
+  revenueRiskId String
+
+  model         String
+  promptVersion String?
+  input         Json?
+  analysis      Json
+  confidence    Decimal?
+
+  createdAt DateTime @default(now())
+
+  revenueRisk RevenueRisk @relation(fields: [revenueRiskId], references: [id], onDelete: Cascade)
+
+  @@index([revenueRiskId])
+  @@index([createdAt])
+}
+
+model RecoveryDecision {
+  id            String @id @default(uuid())
+  revenueRiskId String
+
+  strategy RecoveryStrategy
+  reason   String?
+  priority Int              @default(0)
+
+  status DecisionStatus @default(PENDING)
+
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+
+  revenueRisk       RevenueRisk        @relation(fields: [revenueRiskId], references: [id], onDelete: Cascade)
+  policyEvaluations PolicyEvaluation[]
+  recoveryCases     RecoveryCase[]
+
+  @@index([revenueRiskId])
+  @@index([status])
+}
+
+model RecoveryPolicy {
+  id         String @id @default(uuid())
+  merchantId String
+
+  name String
+
+  maxRetries               Int     @default(3)
+  retryWindowHours         Int     @default(72)
+  maxCommunicationAttempts Int     @default(3)
+  allowAutoRetry           Boolean @default(false)
+  allowVoiceRecovery       Boolean @default(false)
+  escalationThreshold      Int     @default(3)
+
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId, active])
+}
+
+model PolicyEvaluation {
+  id                 String @id @default(uuid())
+  recoveryDecisionId String
+
+  result PolicyResult
+  reason String?
+
+  evaluatedAt DateTime @default(now())
+
+  recoveryDecision RecoveryDecision @relation(fields: [recoveryDecisionId], references: [id], onDelete: Cascade)
+
+  @@index([recoveryDecisionId])
+  @@index([result])
+}
+
+model RecoveryCase {
+  id            String  @id @default(uuid())
+  merchantId    String
+  revenueRiskId String
+  decisionId    String?
+
+  status   RecoveryCaseStatus @default(PENDING)
+  strategy RecoveryStrategy
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  stoppedAt   DateTime?
+  stopReason  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  merchant    Merchant          @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  revenueRisk RevenueRisk       @relation(fields: [revenueRiskId], references: [id], onDelete: Cascade)
+  decision    RecoveryDecision? @relation(fields: [decisionId], references: [id], onDelete: SetNull)
+
+  actions       RecoveryAction[]
+  verifications RecoveryVerification[]
+  voiceRecovery VoiceRecovery?
+  attribution   RevenueAttribution?
+
+  @@index([merchantId, status])
+  @@index([revenueRiskId])
+  @@index([createdAt])
+}
+
+model RecoveryAction {
+  id             String @id @default(uuid())
+  recoveryCaseId String
+
+  actionType RecoveryActionType
+  channel    RecoveryChannel
+  status     ActionStatus       @default(SCHEDULED)
+
+  scheduledAt DateTime?
+  executedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recoveryCase RecoveryCase      @relation(fields: [recoveryCaseId], references: [id], onDelete: Cascade)
+  attempts     RecoveryAttempt[]
+
+  @@index([recoveryCaseId, status])
+  @@index([scheduledAt])
+}
+
+model RecoveryAttempt {
+  id               String @id @default(uuid())
+  recoveryActionId String
+
+  attemptNumber Int
+  status        AttemptStatus
+
+  externalReference String?
+  errorCode         String?
+  errorMessage      String?
+
+  executedAt DateTime @default(now())
+
+  recoveryAction RecoveryAction @relation(fields: [recoveryActionId], references: [id], onDelete: Cascade)
+
+  @@unique([recoveryActionId, attemptNumber])
+  @@index([status])
+}
+
+model RecoveryVerification {
+  id             String  @id @default(uuid())
+  recoveryCaseId String
+  paymentId      String?
+
+  verificationType VerificationType
+  referenceId      String?
+
+  verifiedAmount Decimal?
+  status         VerificationStatus @default(PENDING)
+
+  verifiedAt DateTime?
+
+  recoveryCase RecoveryCase @relation(fields: [recoveryCaseId], references: [id], onDelete: Cascade)
+  payment      Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([recoveryCaseId])
+  @@index([paymentId])
+  @@index([status])
+}
+
+model VoiceRecovery {
+  id             String @id @default(uuid())
+  recoveryCaseId String @unique
+  customerId     String
+
+  language String
+  phone    String
+
+  status VoiceRecoveryStatus @default(SCHEDULED)
+
+  transcript String?
+  outcome    String?
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  recoveryCase RecoveryCase  @relation(fields: [recoveryCaseId], references: [id], onDelete: Cascade)
+  customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  promiseToPay PromiseToPay?
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model PromiseToPay {
+  id              String @id @default(uuid())
+  voiceRecoveryId String @unique
+  customerId      String
+
+  amount   Decimal
+  currency String  @default("INR")
+
+  promisedAt DateTime
+  dueAt      DateTime
+
+  status      PromiseStatus @default(PENDING)
+  fulfilledAt DateTime?
+
+  voiceRecovery VoiceRecovery @relation(fields: [voiceRecoveryId], references: [id], onDelete: Cascade)
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, status])
+  @@index([dueAt])
+}
+
+model RevenueAttribution {
+  id             String  @id @default(uuid())
+  merchantId     String
+  recoveryCaseId String  @unique
+  paymentId      String?
+
+  amountAtRisk    Decimal
+  amountRecovered Decimal
+  currency        String  @default("INR")
+
+  attributionType AttributionType
+  confidence      Decimal?
+
+  recoveredAt DateTime?
+
+  merchant     Merchant     @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  recoveryCase RecoveryCase @relation(fields: [recoveryCaseId], references: [id], onDelete: Cascade)
+  payment      Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([merchantId, recoveredAt])
+  @@index([merchantId, attributionType])
+}
+
+model AuditLog {
+  id         String @id @default(uuid())
+  merchantId String
+
+  entityType String
+  entityId   String
+
+  action    AuditAction
+  actorType AuditActorType
+  actorId   String?
+
+  before Json?
+  after  Json?
+
+  reason String?
+
+  timestamp DateTime @default(now())
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId, timestamp])
+  @@index([entityType, entityId])
+  @@index([action])
 }
