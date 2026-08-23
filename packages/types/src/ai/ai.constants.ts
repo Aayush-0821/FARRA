@@ -1,0 +1,40 @@
+export const AI_MODEL_PROVIDER = {
+  OPENAI: "OPENAI",
+  ANTHROPIC: "ANTHROPIC",
+  GOOGLE: "GOOGLE",
+  LOCAL: "LOCAL",
+} as const;
+
+export type AIModelProvider =
+  (typeof AI_MODEL_PROVIDER)[keyof typeof AI_MODEL_PROVIDER];
+
+export const AI_TASK_TYPE = {
+  RISK_ANALYSIS: "RISK_ANALYSIS",
+  RECOVERY_RECOMMENDATION: "RECOVERY_RECOMMENDATION",
+  CUSTOMER_ANALYSIS: "CUSTOMER_ANALYSIS",
+  PAYMENT_ANALYSIS: "PAYMENT_ANALYSIS",
+  MESSAGE_GENERATION: "MESSAGE_GENERATION",
+  VOICE_ANALYSIS: "VOICE_ANALYSIS",
+} as const;
+
+export type AITaskType =
+  (typeof AI_TASK_TYPE)[keyof typeof AI_TASK_TYPE];
+
+export const AI_ANALYSIS_STATUS = {
+  PENDING: "PENDING",
+  PROCESSING: "PROCESSING",
+  COMPLETED: "COMPLETED",
+  FAILED: "FAILED",
+} as const;
+
+export type AIAnalysisStatus =
+  (typeof AI_ANALYSIS_STATUS)[keyof typeof AI_ANALYSIS_STATUS];
+
+export const AI_RECOMMENDATION_CONFIDENCE = {
+  LOW: "LOW",
+  MEDIUM: "MEDIUM",
+  HIGH: "HIGH",
+} as const;
+
+export type AIRecommendationConfidence =
+  (typeof AI_RECOMMENDATION_CONFIDENCE)[keyof typeof AI_RECOMMENDATION_CONFIDENCE];

@@ -1,0 +1,45 @@
+export const VOICE_RECOVERY_STATUS = {
+  SCHEDULED: "SCHEDULED",
+  IN_PROGRESS: "IN_PROGRESS",
+  COMPLETED: "COMPLETED",
+  FAILED: "FAILED",
+  NO_ANSWER: "NO_ANSWER",
+  DECLINED: "DECLINED",
+} as const;
+
+export type VoiceRecoveryStatus =
+  (typeof VOICE_RECOVERY_STATUS)[keyof typeof VOICE_RECOVERY_STATUS];
+
+export const PROMISE_STATUS = {
+  PENDING: "PENDING",
+  FULFILLED: "FULFILLED",
+  BROKEN: "BROKEN",
+  EXPIRED: "EXPIRED",
+  CANCELLED: "CANCELLED",
+} as const;
+
+export type PromiseStatus =
+  (typeof PROMISE_STATUS)[keyof typeof PROMISE_STATUS];
+
+export const VOICE_LANGUAGE = {
+  ENGLISH: "ENGLISH",
+  HINDI: "HINDI",
+  HINGLISH: "HINGLISH",
+} as const;
+
+export type VoiceLanguage =
+  (typeof VOICE_LANGUAGE)[keyof typeof VOICE_LANGUAGE];
+
+export const VOICE_CALL_OUTCOME = {
+  PAYMENT_PROMISED: "PAYMENT_PROMISED",
+  PAYMENT_COMPLETED: "PAYMENT_COMPLETED",
+  CALLBACK_REQUESTED: "CALLBACK_REQUESTED",
+  DECLINED: "DECLINED",
+  NO_ANSWER: "NO_ANSWER",
+  WRONG_NUMBER: "WRONG_NUMBER",
+  CUSTOMER_UNAVAILABLE: "CUSTOMER_UNAVAILABLE",
+  OTHER: "OTHER",
+} as const;
+
+export type VoiceCallOutcome =
+  (typeof VOICE_CALL_OUTCOME)[keyof typeof VOICE_CALL_OUTCOME];
