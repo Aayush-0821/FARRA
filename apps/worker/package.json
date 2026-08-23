@@ -16,11 +16,12 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@prisma/client": "^7.9.1",
+    "@prisma/client": "^6.19.3",
     "bullmq": "^6.2.0",
     "dotenv": "^17.4.2",
     "ioredis": "^6.0.0",
     "pino": "^10.3.1",
+    "prisma": "^6.19.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
