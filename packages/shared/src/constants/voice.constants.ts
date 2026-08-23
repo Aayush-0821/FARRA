@@ -1,0 +1,12 @@
+export const VOICE = {
+  CALL: {
+    MAX_DURATION_SECONDS: 300,
+    MAX_ATTEMPTS: 2,
+    RETRY_DELAY_HOURS: 24,
+  },
+
+  PROMISE_TO_PAY: {
+    MAX_FUTURE_DAYS: 30,
+    REMINDER_BEFORE_DUE_HOURS: 24,
+  },
+} as const;
