@@ -254,9 +254,89 @@ enum AuditAction {
   VOICE_CALL_COMPLETED
 }
 
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id           String     @id @default(uuid())
+  merchantId   String
+  email        String     @unique
+  passwordHash String
+  name         String
+  role         UserRole   @default(OWNER)
+  status       UserStatus @default(ACTIVE)
+
+  emailVerifiedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+
+  @@index([merchantId])
+  @@index([status])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
 model Merchant {
   id                String         @id @default(uuid())
-  razorpayAccountId String         @unique
+  razorpayAccountId String?         @unique
   name              String
   email             String?
   currency          String         @default("INR")
@@ -264,6 +344,8 @@ model Merchant {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  users User[]
 
   razorpayConnection RazorpayConnection?
   customers          Customer[]

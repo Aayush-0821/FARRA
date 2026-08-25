@@ -21,6 +21,13 @@ const envSchema = z.object({
   RAZORPAY_WEBHOOK_SECRET: z.string().min(1),
 
   OPENAI_API_KEY: z.string().optional(),
+  FRONTEND_URL: z.string(),
+
+  SMTP_HOST: z.string().min(1),
+  SMTP_PORT: z.coerce.number().int().positive(),
+  SMTP_USER: z.string().email(),
+  SMTP_PASSWORD: z.string().min(1),
+  EMAIL_FROM: z.string().email(),
 });
 
 export const env = envSchema.parse(process.env);
