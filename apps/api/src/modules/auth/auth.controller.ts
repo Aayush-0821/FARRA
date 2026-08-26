@@ -1,13 +1,11 @@
-import type {
-  Request,
-  Response,
-  NextFunction,
-} from "express";
+import type { Request, Response, NextFunction } from "express";
 
 import { AppError } from "../../errors/app.errors.js";
 import {
   clearRefreshTokenCookie,
   setRefreshTokenCookie,
+  setAccessTokenCookie,
+  clearAccessTokenCookie,
 } from "../../utils/cookie.js";
 
 import { AUTH_COOKIE } from "./auth.constants.js";
@@ -23,9 +21,7 @@ import {
 } from "./auth.validations.js";
 
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   async register(
     req: Request,
@@ -35,8 +31,7 @@ export class AuthController {
     try {
       const input = registerSchema.parse(req.body);
 
-      const result =
-        await this.authService.register(input);
+      const result = await this.authService.register(input);
 
       res.status(201).json({
         success: true,
@@ -49,27 +44,20 @@ export class AuthController {
     }
   }
 
-  async login(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const input = loginSchema.parse(req.body);
 
-      const result =
-        await this.authService.login(input);
+      const result = await this.authService.login(input);
 
-      setRefreshTokenCookie(
-        res,
-        result.tokens.refreshToken,
-      );
+      setAccessTokenCookie(res, result.tokens.accessToken);
+
+      setRefreshTokenCookie(res, result.tokens.refreshToken);
 
       res.status(200).json({
         success: true,
         data: {
           user: result.user,
-          accessToken: result.tokens.accessToken,
         },
       });
     } catch (error) {
@@ -83,11 +71,9 @@ export class AuthController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const input =
-        verifyEmailSchema.parse(req.body);
+      const input = verifyEmailSchema.parse(req.body);
 
-      const result =
-        await this.authService.verifyEmail(input);
+      const result = await this.authService.verifyEmail(input);
 
       res.status(200).json({
         success: true,
@@ -104,13 +90,9 @@ export class AuthController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const input =
-        resendVerificationEmailSchema.parse(req.body);
+      const input = resendVerificationEmailSchema.parse(req.body);
 
-      const result =
-        await this.authService.resendVerificationEmail(
-          input,
-        );
+      const result = await this.authService.resendVerificationEmail(input);
 
       res.status(200).json({
         success: true,
@@ -127,31 +109,26 @@ export class AuthController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const refreshToken =
-        req.cookies?.[
-          AUTH_COOKIE.REFRESH_TOKEN_NAME
-        ] as string | undefined;
+      const refreshToken = req.cookies?.[AUTH_COOKIE.REFRESH_TOKEN_NAME] as
+        | string
+        | undefined;
 
       if (!refreshToken) {
-        throw new AppError(
-          "Refresh token is required",
-          401,
-        );
+        throw new AppError("Refresh token is required", 401);
       }
 
-      const result =
-        await this.authService.refresh({
-          refreshToken,
-        });
-      setRefreshTokenCookie(
-        res,
-        result.refreshToken,
-      );
+      const result = await this.authService.refresh({
+        refreshToken,
+      });
+
+      setAccessTokenCookie(res, result.accessToken);
+
+      setRefreshTokenCookie(res, result.refreshToken);
 
       res.status(200).json({
         success: true,
         data: {
-          accessToken: result.accessToken,
+          message: "Tokens refreshed successfully",
         },
       });
     } catch (error) {
@@ -159,16 +136,11 @@ export class AuthController {
     }
   }
 
-  async logout(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const refreshToken =
-        req.cookies?.[
-          AUTH_COOKIE.REFRESH_TOKEN_NAME
-        ] as string | undefined;
+      const refreshToken = req.cookies?.[AUTH_COOKIE.REFRESH_TOKEN_NAME] as
+        | string
+        | undefined;
 
       if (refreshToken) {
         await this.authService.logout({
@@ -176,6 +148,7 @@ export class AuthController {
         });
       }
 
+      clearAccessTokenCookie(res);
       clearRefreshTokenCookie(res);
 
       res.status(200).json({
@@ -195,11 +168,9 @@ export class AuthController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const input =
-        forgotPasswordSchema.parse(req.body);
+      const input = forgotPasswordSchema.parse(req.body);
 
-      const result =
-        await this.authService.forgotPassword(input);
+      const result = await this.authService.forgotPassword(input);
 
       res.status(200).json({
         success: true,
@@ -216,11 +187,10 @@ export class AuthController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const input =
-        resetPasswordSchema.parse(req.body);
+      const input = resetPasswordSchema.parse(req.body);
 
-      const result =
-        await this.authService.resetPassword(input);
+      const result = await this.authService.resetPassword(input);
+      clearAccessTokenCookie(res);
       clearRefreshTokenCookie(res);
 
       res.status(200).json({
