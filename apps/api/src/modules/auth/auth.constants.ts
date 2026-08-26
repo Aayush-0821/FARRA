@@ -7,7 +7,9 @@ export const AUTH_DEFAULTS = {
 
 export const AUTH_COOKIE = {
   REFRESH_TOKEN_NAME: "refreshToken",
-  REFRESH_TOKEN_PATH: "/api/v1/auth",
+  REFRESH_TOKEN_PATH: "/",
+  ACCESS_TOKEN_NAME: "accessToken",
+  ACCESS_TOKEN_PATH: "/",
 } as const;
 
 export const AUTH_LIMITS = {

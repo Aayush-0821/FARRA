@@ -1,43 +1,60 @@
 import type { Response } from "express";
 
-import {
-  AUTH_COOKIE,
-  AUTH_DEFAULTS,
-} from "../modules/auth/auth.constants.js";
+import { AUTH_COOKIE } from "../modules/auth/auth.constants.js";
 
-const refreshTokenCookieOptions = {
+const isProduction = process.env.NODE_ENV === "production";
+
+const baseCookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
-  maxAge:
-    AUTH_DEFAULTS.REFRESH_TOKEN_EXPIRES_IN_DAYS *
-    24 *
-    60 *
-    60 *
-    1000,
-  path: AUTH_COOKIE.REFRESH_TOKEN_PATH,
+  secure: isProduction,
+  sameSite: isProduction ? ("none" as const) : ("lax" as const),
 };
+
+export function setAccessTokenCookie(
+  res: Response,
+  accessToken: string,
+) {
+  res.cookie(
+    AUTH_COOKIE.ACCESS_TOKEN_NAME,
+    accessToken,
+    {
+      ...baseCookieOptions,
+      path: AUTH_COOKIE.ACCESS_TOKEN_PATH,
+      maxAge: 15 * 60 * 1000,
+    },
+  );
+}
 
 export function setRefreshTokenCookie(
   res: Response,
   refreshToken: string,
-): void {
+) {
   res.cookie(
     AUTH_COOKIE.REFRESH_TOKEN_NAME,
     refreshToken,
-    refreshTokenCookieOptions,
+    {
+      ...baseCookieOptions,
+      path: AUTH_COOKIE.REFRESH_TOKEN_PATH,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    },
   );
 }
 
-export function clearRefreshTokenCookie(
-  res: Response,
-): void {
+export function clearAccessTokenCookie(res: Response) {
+  res.clearCookie(
+    AUTH_COOKIE.ACCESS_TOKEN_NAME,
+    {
+      ...baseCookieOptions,
+      path: AUTH_COOKIE.ACCESS_TOKEN_PATH,
+    },
+  );
+}
+
+export function clearRefreshTokenCookie(res: Response) {
   res.clearCookie(
     AUTH_COOKIE.REFRESH_TOKEN_NAME,
     {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      ...baseCookieOptions,
       path: AUTH_COOKIE.REFRESH_TOKEN_PATH,
     },
   );
