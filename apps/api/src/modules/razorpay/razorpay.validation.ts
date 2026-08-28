@@ -52,10 +52,32 @@ export const updateRazorpayConnectionSchema = z.object({
     .optional(),
 });
 
+export const oauthCallbackSchema = z.object({
+  code: z
+    .string()
+    .min(1, "OAuth authorization code is required"),
+
+  state: z
+    .string()
+    .min(1, "OAuth state is required"),
+
+  error: z
+    .string()
+    .optional(),
+
+  error_description: z
+    .string()
+    .optional(),
+});
+
 export type CreateRazorpayConnectionInput = z.infer<
   typeof createRazorpayConnectionSchema
 >;
 
 export type UpdateRazorpayConnectionInput = z.infer<
   typeof updateRazorpayConnectionSchema
+>;
+
+export type OAuthCallbackInput = z.infer<
+  typeof oauthCallbackSchema
 >;

@@ -6,12 +6,14 @@ import type {
 
 import { AppError } from "../../errors/app.errors.js";
 
-import { RazorpayService } from "./razorpay.service.js";
-
 import {
-  createRazorpayConnectionSchema,
+  oauthCallbackSchema,
   updateRazorpayConnectionSchema,
 } from "./razorpay.validation.js";
+
+import { RAZORPAY_ERRORS } from "./razorpay.constants.js";
+
+import { RazorpayService } from "./razorpay.service.js";
 
 export class RazorpayController {
   constructor(
@@ -24,7 +26,8 @@ export class RazorpayController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const merchantId = req.user?.merchantId;
+      const merchantId =
+        req.user?.merchantId;
 
       if (!merchantId) {
         throw new AppError(
@@ -47,13 +50,17 @@ export class RazorpayController {
     }
   }
 
-  async createConnection(
+  /**
+   * Start Razorpay OAuth flow.
+   */
+  async connect(
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
     try {
-      const merchantId = req.user?.merchantId;
+      const merchantId =
+        req.user?.merchantId;
 
       if (!merchantId) {
         throw new AppError(
@@ -62,21 +69,45 @@ export class RazorpayController {
         );
       }
 
-      const input =
-        createRazorpayConnectionSchema.parse({
-          ...req.body,
+      const authorizationUrl =
+        await this.razorpayService.startOAuth(
           merchantId,
-        });
-
-      const result =
-        await this.razorpayService.createConnection(
-          input,
         );
 
-      res.status(201).json({
-        success: true,
-        data: result,
-      });
+      res.redirect(authorizationUrl);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Razorpay OAuth callback.
+   */
+  async oauthCallback(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const input =
+        oauthCallbackSchema.parse(req.query);
+
+      if (input.error) {
+        throw new AppError(
+          input.error_description ??
+            RAZORPAY_ERRORS.OAUTH_ACCESS_DENIED,
+          400,
+        );
+      }
+
+      await this.razorpayService.handleOAuthCallback(
+        input.code,
+        input.state,
+      );
+
+      res.redirect(
+        `${process.env.FRONTEND_URL}/dashboard?razorpay=connected`,
+      );
     } catch (error) {
       next(error);
     }
@@ -88,7 +119,8 @@ export class RazorpayController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const merchantId = req.user?.merchantId;
+      const merchantId =
+        req.user?.merchantId;
 
       if (!merchantId) {
         throw new AppError(
@@ -123,7 +155,8 @@ export class RazorpayController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const merchantId = req.user?.merchantId;
+      const merchantId =
+        req.user?.merchantId;
 
       if (!merchantId) {
         throw new AppError(

@@ -1,12 +1,11 @@
-import {
-  PrismaClient,
-  ConnectionStatus,
-} from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 import type {
-  CreateRazorpayConnectionInput,
   UpdateRazorpayConnectionInput,
+  RazorpayOAuthTokenResponse,
 } from "./razorpay.types.js";
+
+import { RAZORPAY_DEFAULTS } from "./razorpay.constants.js";
 
 export class RazorpayRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -27,35 +26,39 @@ export class RazorpayRepository {
     });
   }
 
-  async create(input: CreateRazorpayConnectionInput) {
+  async createFromOAuth(
+    merchantId: string,
+    tokens: RazorpayOAuthTokenResponse,
+  ) {
     return this.prisma.razorpayConnection.create({
       data: {
-        merchantId: input.merchantId,
-        accessToken: input.accessToken,
+        merchantId,
 
-        ...(input.refreshToken !== undefined && {
-          refreshToken: input.refreshToken,
+        razorpayAccountId: tokens.razorpay_account_id,
+
+        accessToken: tokens.access_token,
+
+        ...(tokens.refresh_token !== undefined && {
+          refreshToken: tokens.refresh_token,
         }),
 
-        ...(input.expiresAt !== undefined && {
-          expiresAt: input.expiresAt,
+        ...(tokens.expires_in !== undefined && {
+          expiresAt: new Date(Date.now() + tokens.expires_in * 1000),
         }),
 
-        ...(input.scope !== undefined && {
-          scope: input.scope,
-        }),
+        scope: RAZORPAY_DEFAULTS.OAUTH_SCOPE,
+
+        status: "ACTIVE",
       },
     });
   }
 
-  async update(
-    id: string,
-    input: UpdateRazorpayConnectionInput,
-  ) {
+  async update(id: string, input: UpdateRazorpayConnectionInput) {
     return this.prisma.razorpayConnection.update({
       where: {
         id,
       },
+
       data: {
         ...(input.accessToken !== undefined && {
           accessToken: input.accessToken,
@@ -74,7 +77,11 @@ export class RazorpayRepository {
         }),
 
         ...(input.status !== undefined && {
-          status: input.status as ConnectionStatus,
+          status: input.status as
+            | "ACTIVE"
+            | "EXPIRED"
+            | "REVOKED"
+            | "DISCONNECTED",
         }),
       },
     });
