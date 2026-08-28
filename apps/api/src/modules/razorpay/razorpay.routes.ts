@@ -1,23 +1,29 @@
 import { Router } from "express";
 
 import { prisma } from "../../lib/prisma.js";
+
 import { requireAuth } from "../../middleware/auth.middleware.js";
 
 import { RazorpayController } from "./razorpay.controller.js";
+
 import { RazorpayRepository } from "./razorpay.repository.js";
+
 import { RazorpayService } from "./razorpay.service.js";
 
 const razorpayRouter = Router();
 
-const razorpayRepository = new RazorpayRepository(prisma);
+const razorpayRepository =
+  new RazorpayRepository(prisma);
 
-const razorpayService = new RazorpayService(
-  razorpayRepository,
-);
+const razorpayService =
+  new RazorpayService(
+    razorpayRepository,
+  );
 
-const razorpayController = new RazorpayController(
-  razorpayService,
-);
+const razorpayController =
+  new RazorpayController(
+    razorpayService,
+  );
 
 razorpayRouter.get(
   "/connection",
@@ -27,10 +33,17 @@ razorpayRouter.get(
   ),
 );
 
-razorpayRouter.post(
-  "/connection",
+razorpayRouter.get(
+  "/connect",
   requireAuth,
-  razorpayController.createConnection.bind(
+  razorpayController.connect.bind(
+    razorpayController,
+  ),
+);
+
+razorpayRouter.get(
+  "/callback",
+  razorpayController.oauthCallback.bind(
     razorpayController,
   ),
 );

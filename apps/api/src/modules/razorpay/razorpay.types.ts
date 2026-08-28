@@ -3,6 +3,7 @@ import type { z } from "zod";
 import {
   createRazorpayConnectionSchema,
   updateRazorpayConnectionSchema,
+  oauthCallbackSchema,
 } from "./razorpay.validation.js";
 
 export type RazorpayConnectionStatus =
@@ -18,6 +19,19 @@ export type CreateRazorpayConnectionInput = z.infer<
 export type UpdateRazorpayConnectionInput = z.infer<
   typeof updateRazorpayConnectionSchema
 >;
+
+export type OAuthCallbackInput = z.infer<
+  typeof oauthCallbackSchema
+>;
+
+export interface RazorpayOAuthTokenResponse {
+  token_type: string;
+  expires_in: number;
+  access_token: string;
+  public_token?: string;
+  refresh_token?: string;
+  razorpay_account_id: string;
+}
 
 export interface RazorpayConnectionResponse {
   id: string;

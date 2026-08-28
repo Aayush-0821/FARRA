@@ -365,14 +365,17 @@ model Merchant {
 }
 
 model RazorpayConnection {
-  id         String @id @default(uuid())
-  merchantId String @unique
-  provider   String @default("razorpay")
+  id                String @id @default(uuid())
+  merchantId        String @unique
+  razorpayAccountId String @unique
+
+  provider String @default("razorpay")
 
   accessToken  String
   refreshToken String?
-  expiresAt    DateTime?
-  scope        String?
+
+  expiresAt DateTime?
+  scope     String?
 
   status ConnectionStatus @default(ACTIVE)
 
