@@ -15,6 +15,7 @@ import { healthRouter } from "./routes/health.routes.js";
 import { merchantRoutes } from "./modules/merchants/merchants.routes.js";
 import authRouter from "./modules/auth/auth.routes.js";
 import razorpayRouter from "./modules/razorpay/razorpay.routes.js";
+import detectionRoutes from "./modules/ai-engine/detection/detection.routes.js";
 
 export const app = express();
 
@@ -36,6 +37,7 @@ app.use(cookieParser());
 app.use("/api/v1/merchants", merchantRoutes);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/razorpay", razorpayRouter);
+app.use("/api/v1/detection", detectionRoutes);
 
 app.use(healthRouter);
 
